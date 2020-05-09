@@ -21,6 +21,14 @@
 #define BOOTCHAR_HEIGHT 13
 #define BOOTCHAR_WIDTH  8 // Each character line is encoded in a UCHAR.
 
+#ifdef CHAR_GEN_UPSIDE_DOWN
+# define GetFontPtr(_Char) &FontData[_Char * BOOTCHAR_HEIGHT] + BOOTCHAR_HEIGHT - 1;
+# define FONT_PTR_DELTA (-1)
+#else
+# define GetFontPtr(_Char) &FontData[_Char * BOOTCHAR_HEIGHT];
+# define FONT_PTR_DELTA (1)
+#endif
+
 /* Bitmap Header */
 typedef struct tagBITMAPINFOHEADER
 {
@@ -41,16 +49,14 @@ typedef struct tagBITMAPINFOHEADER
 #define BI_RGB  0
 #define BI_RLE4 2
 
-typedef struct _PALETTE_ENTRY
-{
-    UCHAR Red;
-    UCHAR Green;
-    UCHAR Blue;
-} PALETTE_ENTRY, *PPALETTE_ENTRY;
+typedef ULONG RGBQUAD;
 
-VOID
-NTAPI
-InitializePalette(VOID);
+#define RGB(r, g, b)    ((RGBQUAD)(((UCHAR)(b) | ((USHORT)((UCHAR)(g))<<8)) | (((ULONG)(UCHAR)(r))<<16)))
+#define GetRed(quad)    ((UCHAR)(((quad)>>16) & 0xFF))
+#define GetGreen(quad)  ((UCHAR)(((quad)>>8) & 0xFF))
+#define GetBlue(quad)   ((UCHAR)((quad) & 0xFF))
+
+#define InitializePalette()    InitPaletteWithTable((PULONG)DefaultPalette, BV_MAX_COLORS)
 
 VOID
 NTAPI
@@ -71,6 +77,18 @@ InitPaletteWithTable(
     _In_ PULONG Table,
     _In_ ULONG Count);
 
+VOID
+NTAPI
+VidpScroll(
+    _In_ ULONG Scroll);
+
+VOID
+NTAPI
+PreserveRow(
+    _In_ ULONG CurrentTop,
+    _In_ ULONG TopDelta,
+    _In_ BOOLEAN Restore);
+
 /*
  * Globals
  */
@@ -79,5 +97,6 @@ extern ULONG VidpCurrentX;
 extern ULONG VidpCurrentY;
 extern ULONG VidpScrollRegion[4];
 extern UCHAR FontData[256 * BOOTCHAR_HEIGHT];
+extern const RGBQUAD DefaultPalette[BV_MAX_COLORS];
 
 #endif /* _BOOTVID_PCH_ */
